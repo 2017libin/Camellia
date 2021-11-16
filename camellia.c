@@ -1,4 +1,31 @@
 #include "camellia.h"
+u64 FL(u64 FL_IN, u64 KE){
+    u32 x1, x2;
+    u32 k1, k2;
+    u64 FL_OUT;
+    x1 = FL_IN >> 32;
+    X2 = F_IN & MASK32;
+    k1 = KE >> 32;
+    k2 = KE & MASK32;
+    x2 = x2 ^ ((x1 & k1) << 1 | (x1 & k1) >> (32-1))
+    x1 = x1 ^ (x2 | k2);
+    FL_OUT = (X1 << 32) | X2;
+    return FL_OUT;
+}
+
+u64 FLINV(u64 FLINV_IN, u64 KE){
+    u32 y1, y2;
+    u32 k1, k2;
+    u64 FLINV_OUT;
+    y1 = FLINV_IN >> 32;
+    y2 = FLINV_IN & MASK32;
+    k1 = KE >> 32;
+    k2 = KE & MASK32;
+    y1 = y1 ^ (y2 | k2);
+    y2 = y2 ^ ((y1 & k1) << 1 | (y1 & k1) >> (32-1));
+    FLINV_OUT = (y1 << 32) | y2;
+    return FLINV_OUT;
+}
 
 u64 F(u64 F_IN, u64 KE){
     u64 x;
@@ -75,8 +102,14 @@ void init_KA_KB(const u64 *KL, const u64 *KR, u64 *KA, u64 *KB){
 }
 
 // generate 64-bit subkeys kw1,..,kw4, k1,...,k18, ke1,...,ke4
-void key_scheduling_128(const u64 *KL, const u64 *KR, u64 *kw, u64 *k, u64 *ke){
+void key_scheduling_128(const u64 *key, u64 *kw, u64 *k, u64 *ke){
     u64 KA[2], KB[2];
+    u64 KL[2], KR[2];
+
+    KL[0] = key[0];
+    KL[1] = key[1];
+    KR[0] = 0;
+    KR[1] = 0;
     init_KA_KB(KL, KR, KA, KB);  // generate 128-bit varrables KA and KB, which used in key scheduling
     kw[0] = KL[0];
     kw[1] = KL[1];
@@ -94,6 +127,50 @@ void key_scheduling_128(const u64 *KL, const u64 *KR, u64 *kw, u64 *k, u64 *ke){
     k[9] = (KL[1] << 60) | (KL[0] >> (64-60));  // KL <<< 60
     k[10] = (KA[0] << 60) | (KA[1] >> (64-60));  // KA <<< 60
     k[11] = (KA[1] << 60) | (KA[0] >> (64-60));
+    ke[2] = (KL[1] << 13) | (KL[0] >> (64-13));  // KL <<< 77
+    ke[3] = (KL[0] << 13) | (KL[1] >> (64-13));
+    K[12] = (KL[1] << 30) | (KL[0] >> (64-30));  // KL <<< 94
+    K[13] = (KL[0] << 30) | (KL[1] >> (64-30));
+    K[14] = (KA[1] << 30) | (KA[0] >> (64-30));  // KA <<< 94
+    k[15] = (KA[0] << 30) | (KA[1] >> (64-30));
+    k[16] = (KL[1] << 47) | (KL[0] >> (64-47));  // KL <<< 111
+    k[17] = (KL[0] << 47) | (KL[1] >> (64-47));
+    kw[2] = (KA[1] << 47) | (KA[0] >> (64-47));  // KA <<< 111
+    kw[3] = (KA[0] << 47) | (KA[1] >> (64-47));
+}
+
+u64* encrypt_128k(u64 *data, u64 *key, u64 *c){
+    u64 D1, D2;
+    u64 kw[4], k[18], ke[4];
+    key_scheduling_128(key, kw, k, ke);
+    D1 = D1 ^ kw[0];
+    D2 = D2 ^ kw[1];
+    D2 = D2 ^ F(D1, k[0]);
+    D1 = D1 ^ F(D2, k[1]);
+    D2 = D2 ^ F(D1, k[2]);
+    D1 = D1 ^ F(D2, k[3]);
+    D2 = D2 ^ F(D1, k[4]);
+    D1 = D1 ^ F(D2, k[5]);
+    D1 = FL(D1, ke[0]);     // FL
+    D2 = FLINV(D2, ke[1]);  // FLINV
+    D2 = D2 ^ F(D1, k[6]);
+    D1 = D1 ^ F(D2, k[7]);
+    D2 = D2 ^ F(D1, k[8]);
+    D1 = D1 ^ F(D2, k[9]);
+    D2 = D2 ^ F(D1, k[10]);
+    D1 = D1 ^ F(D2, k[11]);
+    D1 = FL(D1, ke[2]);     // FL
+    D2 = FLINV(D2, ke[3]);  // FLINV
+    D2 = D2 ^ F(D1, k[12]);
+    D1 = D1 ^ F(D2, k[13]);
+    D2 = D2 ^ F(D1, k[14]);
+    D1 = D1 ^ F(D2, k[15]);
+    D2 = D2 ^ F(D1, k[16]);
+    D1 = D1 ^ F(D2, k[17]); 
+    D2 = D2 ^ kw[2];
+    D1 = D1 ^ kw[3];
+    c[0] = D2;
+    c[1] = D1;
 }
 
 int main(){

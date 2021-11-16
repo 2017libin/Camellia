@@ -5,9 +5,9 @@
 // u8的循环左移
 #define ROTL8(x,shift) ((u8) ((x) << (shift)) | ((x) >> (8 - (shift)))
 
-
 #define MASK8 0xff
 #define MASK16 0xffff
+#define MASK32 0Xffffffff
 
 typedef unsigned char u8;
 typedef unsigned int u32;
