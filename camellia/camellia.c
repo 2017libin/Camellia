@@ -243,6 +243,8 @@ static const u32 SIGMA[] = {
     0x54ff53a5, 0xf1d36f1c, 0x10e527fa, 0xde682d1d, 0xb05688c2, 0xb3e6c1fd
 };
 
+
+
 /* The phi algorithm given in C.2.7 of the Camellia spec document. */
 /*
  * This version does not attempt to minimize amount of temporary
@@ -256,12 +258,12 @@ static const u32 SIGMA[] = {
 \
         _t0  = _s0 ^ (_key)[0];\
         _t3  = SBOX4_4404[_t0&0xff];\
-        _t1  = _s1 ^ (_key)[1];\
         _t3 ^= SBOX3_3033[(_t0 >> 8)&0xff];\
-        _t2  = SBOX1_1110[_t1&0xff];\
         _t3 ^= SBOX2_0222[(_t0 >> 16)&0xff];\
-        _t2 ^= SBOX4_4404[(_t1 >> 8)&0xff];\
         _t3 ^= SBOX1_1110[(_t0 >> 24)];\
+        _t1  = _s1 ^ (_key)[1];\
+        _t2  = SBOX1_1110[_t1&0xff];\
+        _t2 ^= SBOX4_4404[(_t1 >> 8)&0xff];\
         _t2 ^= _t3;\
         _t3  = RightRotate(_t3,8);\
         _t2 ^= SBOX3_3033[(_t1 >> 16)&0xff];\
@@ -507,7 +509,21 @@ void Camellia_DecryptBlock(int keyBitLength, const u8 plaintext[],
                                  plaintext, keyTable, ciphertext);
 }
 
+void Camellia_encrypt_128(const u8 *in, const u8 *key, u8 *out){
+    KEY_TABLE_TYPE subkey;
+    Camellia_Ekeygen(128, key, subkey);
+    Camellia_EncryptBlock(128, in, subkey, out);
+}
+
 int main(){
     printf("hello world!\n");
+    u8 in[] = {0x01, 0x23, 0x45,0x67, 0x89, 0xab, 0xcd, 0xef, 0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10};
+    u8 key[] = {0x01, 0x23, 0x45,0x67, 0x89, 0xab, 0xcd, 0xef, 0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10};
+    u8 out[16];
+    Camellia_encrypt_128(in, key, out);
+    for (int i = 0; i < 16; ++i){
+        printf("%x",out[i]);
+    }
+    printf("\n");
     return 0;
 }

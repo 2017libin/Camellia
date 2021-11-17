@@ -28,7 +28,7 @@
 #  define CAMELLIA_TABLE_BYTE_LEN 272
 #  define CAMELLIA_TABLE_WORD_LEN (CAMELLIA_TABLE_BYTE_LEN / 4)
 
-typedef unsigned int KEY_TABLE_TYPE[CAMELLIA_TABLE_WORD_LEN]; /* to match
+typedef unsigned int KEY_TABLE_TYPE[CAMELLIA_TABLE_WORD_LEN]; /* to match  
                                                                * with WORD */
 
 typedef unsigned int u32;
